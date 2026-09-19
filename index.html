@@ -1,0 +1,1065 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>SmartDemand</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet"/>
+<style>
+:root {
+  --blue:        #2563eb;
+  --blue-2:      #1d4ed8;
+  --blue-light:  #eff6ff;
+  --blue-mid:    #bfdbfe;
+
+  --bg:          #f1f5f9;
+  --white:       #ffffff;
+  --border:      #e2e8f0;
+  --border-2:    #cbd5e1;
+
+  --text:        #0f172a;
+  --text-2:      #334155;
+  --muted:       #64748b;
+  --subtle:      #f8fafc;
+
+  /* Demand level gradients */
+  --low-a:    #075985; --low-b:    #0ea5e9;
+  --mod-a:    #92400e; --mod-b:    #f59e0b;
+  --hi-a:     #064e3b; --hi-b:     #10b981;
+  --vhi-a:    #4c1d95; --vhi-b:    #8b5cf6;
+
+  /* Demand bar colors */
+  --low-bar:  #0ea5e9;
+  --mod-bar:  #f59e0b;
+  --hi-bar:   #10b981;
+  --vhi-bar:  #8b5cf6;
+
+  --sans:   'Plus Jakarta Sans', sans-serif;
+  --mono:   'JetBrains Mono', monospace;
+  --r:      12px;
+  --r-sm:   8px;
+  --shadow: 0 1px 3px rgba(15,23,42,.07), 0 1px 2px rgba(15,23,42,.05);
+  --shadow-md: 0 4px 12px rgba(15,23,42,.08);
+  --shadow-lg: 0 10px 32px rgba(15,23,42,.12);
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { font-size: 16px; -webkit-font-smoothing: antialiased; }
+body { font-family: var(--sans); background: var(--bg); color: var(--text); min-height: 100vh; position: relative; overflow-x: hidden; }
+
+/* BACKGROUND DECORATION */
+body::before {
+  content: '';
+  position: fixed; inset: 0;
+  background-image: radial-gradient(circle, rgba(37,99,235,.05) 1px, transparent 1px);
+  background-size: 28px 28px;
+  pointer-events: none; z-index: 0;
+}
+body::after {
+  content: '';
+  position: fixed; top: -200px; right: -200px;
+  width: 560px; height: 560px;
+  background: radial-gradient(circle, rgba(37,99,235,.1) 0%, rgba(99,102,241,.05) 50%, transparent 72%);
+  border-radius: 50%; pointer-events: none; z-index: 0;
+}
+.bg-blob { position: fixed; bottom: -160px; left: -160px; width: 440px; height: 440px; background: radial-gradient(circle, rgba(16,185,129,.07) 0%, rgba(37,99,235,.04) 50%, transparent 72%); border-radius: 50%; pointer-events: none; z-index: 0; }
+.page { position: relative; z-index: 1; }
+
+/* PAGE */
+.page { max-width: 1300px; margin: 0 auto; padding: 0 1.5rem 3rem; }
+
+/* HEADER */
+.site-header { padding: 2rem 0 1.8rem; }
+.site-header-inner { display: flex; align-items: center; gap: 1rem; margin-bottom: 0.9rem; }
+.logo-box {
+  width: 52px; height: 52px;
+  background: linear-gradient(135deg, var(--blue), var(--blue-2));
+  border-radius: 14px;
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 4px 14px rgba(37,99,235,.3);
+  flex-shrink: 0;
+  transition: box-shadow .25s, transform .25s;
+}
+.logo-box:hover { transform: rotate(-5deg) scale(1.05); box-shadow: 0 6px 20px rgba(37,99,235,.45); }
+.site-title { font-size: 2.1rem; font-weight: 800; color: var(--text); letter-spacing: -.03em; line-height: 1.1; }
+.site-sub   { font-size: .88rem; color: var(--muted); margin-top: .2rem; }
+.site-desc  { font-size: .95rem; color: var(--text-2); max-width: 640px; line-height: 1.65; }
+
+/* MODEL BANNER */
+.model-banner {
+  display: flex; align-items: center; gap: 1rem;
+  background: linear-gradient(135deg, #eff6ff, #dbeafe);
+  border: 1px solid var(--blue-mid);
+  border-radius: var(--r);
+  padding: 1.1rem 1.5rem;
+  margin-bottom: 1.8rem;
+  box-shadow: var(--shadow);
+  transition: box-shadow .25s, transform .25s;
+}
+.model-banner:hover { box-shadow: 0 6px 22px rgba(37,99,235,.14); transform: translateY(-1px); }
+.banner-icon {
+  width: 44px; height: 44px;
+  background: linear-gradient(135deg, var(--blue), var(--blue-2));
+  border-radius: 11px;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  box-shadow: 0 4px 12px rgba(37,99,235,.28);
+}
+.banner-title { font-weight: 700; font-size: .95rem; color: var(--text); }
+.banner-sub   { font-size: .75rem; color: var(--muted); margin-top: 2px; font-family: var(--mono); }
+.banner-right { margin-left: auto; display: flex; align-items: center; gap: .5rem; }
+.ready-badge {
+  display: flex; align-items: center; gap: .4rem;
+  background: #f0fdf4; color: #15803d;
+  border: 1px solid #bbf7d0;
+  border-radius: 999px; padding: .3rem .85rem;
+  font-size: .75rem; font-weight: 600;
+}
+.ready-dot {
+  width: 7px; height: 7px; border-radius: 50%;
+  background: #22c55e; box-shadow: 0 0 6px #22c55e;
+  animation: blink 2s infinite;
+}
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:.35} }
+
+/* MAIN GRID */
+.main-grid { display: grid; grid-template-columns: 5fr 7fr; gap: 1.5rem; align-items: start; }
+
+/* CARD */
+.card {
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  box-shadow: var(--shadow);
+  transition: box-shadow .25s, transform .25s;
+}
+.card:hover { box-shadow: 0 8px 28px rgba(15,23,42,.11); transform: translateY(-2px); }
+
+/* CARD HEADER */
+.card-head {
+  display: flex; align-items: center; gap: .8rem;
+  padding: 1.2rem 1.4rem 1.1rem;
+  border-bottom: 1px solid var(--border);
+}
+.card-head-icon {
+  width: 38px; height: 38px; border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.icon-blue { background: linear-gradient(135deg, var(--blue), var(--blue-2)); }
+.icon-slate { background: linear-gradient(135deg, #475569, #334155); }
+.card-head-title { font-weight: 700; font-size: .95rem; color: var(--text); }
+.card-head-sub   { font-size: .72rem; color: var(--muted); margin-top: 1px; }
+
+/* FORM */
+.form-body { padding: 1.2rem 1.4rem; }
+
+.field { margin-bottom: 1.2rem; }
+.field:last-child { margin-bottom: 0; }
+.field-label {
+  display: block; font-size: .8rem; font-weight: 600;
+  color: var(--text); margin-bottom: .45rem;
+}
+.field-row { display: grid; grid-template-columns: 1fr 1fr; gap: .8rem; margin-bottom: 1.2rem; }
+
+/* Input + badge */
+.input-row { display: flex; align-items: center; gap: .5rem; margin-bottom: .45rem; }
+.f-input {
+  flex: 1; height: 40px;
+  border: 1.5px solid var(--border-2);
+  border-radius: var(--r-sm);
+  font-family: var(--sans); font-size: .88rem; color: var(--text);
+  padding: 0 .8rem; background: var(--white); outline: none;
+  transition: border-color .18s, box-shadow .18s;
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+input[type=number]::-webkit-inner-spin-button,
+input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; }
+.f-input:focus { border-color: var(--blue); box-shadow: 0 0 0 3px rgba(37,99,235,.12); }
+.f-input:hover:not(:focus) { border-color: var(--blue-mid); }
+
+/* Select */
+.f-select {
+  width: 100%; height: 40px;
+  border: 1.5px solid var(--border-2);
+  border-radius: var(--r-sm);
+  font-family: var(--sans); font-size: .88rem; color: var(--text);
+  padding: 0 2rem 0 .8rem; background: var(--white); outline: none;
+  cursor: pointer; appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right .85rem center;
+  transition: border-color .18s, box-shadow .18s;
+}
+.f-select:focus { border-color: var(--blue); box-shadow: 0 0 0 3px rgba(37,99,235,.12); outline: none; }
+
+/* Value badge */
+.val-badge {
+  font-family: var(--mono); font-size: .72rem; font-weight: 600;
+  padding: .22rem .6rem; border-radius: 5px; white-space: nowrap;
+  border: 1px solid;
+}
+.vb-blue   { background: #eff6ff; color: var(--blue);   border-color: var(--blue-mid); }
+.vb-amber  { background: #fffbeb; color: #92400e;       border-color: #fde68a; }
+.vb-slate  { background: var(--subtle); color: var(--muted); border-color: var(--border); }
+.vb-green  { background: #f0fdf4; color: #15803d;       border-color: #bbf7d0; }
+.vb-orange { background: #fff7ed; color: #c2410c;       border-color: #fed7aa; }
+
+/* Slider */
+.f-range {
+  width: 100%; height: 5px; appearance: none;
+  background: var(--border); border-radius: 999px; cursor: pointer; outline: none;
+  transition: background .2s;
+}
+.f-range:hover { background: var(--border-2); }
+.f-range::-webkit-slider-thumb {
+  appearance: none; width: 18px; height: 18px;
+  background: var(--blue); border-radius: 50%;
+  border: 2.5px solid #fff;
+  box-shadow: 0 1px 5px rgba(37,99,235,.4);
+  transition: transform .15s, box-shadow .15s;
+  cursor: grab;
+}
+.f-range::-webkit-slider-thumb:hover {
+  transform: scale(1.25);
+  box-shadow: 0 0 0 5px rgba(37,99,235,.15), 0 2px 8px rgba(37,99,235,.4);
+}
+.f-range::-webkit-slider-thumb:active {
+  transform: scale(1.15);
+  cursor: grabbing;
+  box-shadow: 0 0 0 7px rgba(37,99,235,.12), 0 2px 8px rgba(37,99,235,.4);
+}
+.field-hint { font-size: .68rem; color: var(--muted); margin-top: .3rem; }
+
+/* Toggle buttons */
+.toggle-row { display: flex; gap: .5rem; }
+.toggle-btn {
+  flex: 1; height: 38px; border-radius: var(--r-sm);
+  font-family: var(--sans); font-size: .8rem; font-weight: 600;
+  cursor: pointer; border: 1.5px solid var(--border-2);
+  background: var(--white); color: var(--muted); transition: all .18s;
+}
+.toggle-btn.active {
+  background: var(--blue); color: #fff; border-color: var(--blue);
+  box-shadow: 0 2px 10px rgba(37,99,235,.28);
+}
+.toggle-btn:not(.active):hover { border-color: var(--blue); color: var(--blue); background: var(--blue-light); }
+.toggle-btn { position: relative; overflow: hidden; }
+.toggle-btn::after { content:''; position:absolute; inset:0; background:rgba(255,255,255,0); transition: background .2s; }
+.toggle-btn:active::after { background:rgba(255,255,255,.2); }
+
+/* Predict button */
+.predict-btn {
+  width: 100%; height: 48px;
+  background: linear-gradient(135deg, var(--blue), var(--blue-2));
+  color: #fff; font-family: var(--sans); font-size: .95rem; font-weight: 700;
+  border: none; border-radius: var(--r-sm); cursor: pointer;
+  margin-top: 1.3rem; display: flex; align-items: center;
+  justify-content: center; gap: .55rem;
+  box-shadow: 0 4px 16px rgba(37,99,235,.35);
+  transition: all .2s; letter-spacing: .01em;
+  position: relative; overflow: hidden;
+}
+.predict-btn::after {
+  content: ''; position: absolute; inset: 0;
+  background: linear-gradient(105deg, transparent 40%, rgba(255,255,255,.25) 50%, transparent 60%);
+  background-size: 200% 100%; background-position: -100% 0;
+  transition: background-position .55s ease;
+}
+.predict-btn:hover::after { background-position: 200% 0; }
+.predict-btn:hover { transform: translateY(-1px); box-shadow: 0 6px 22px rgba(37,99,235,.45); }
+.predict-btn:active { transform: none; }
+.predict-btn:disabled { opacity: .6; cursor: wait; transform: none; }
+
+.spin {
+  width: 16px; height: 16px; border-radius: 50%;
+  border: 2px solid rgba(255,255,255,.35); border-top-color: #fff;
+  animation: sp .7s linear infinite;
+}
+@keyframes sp { to { transform: rotate(360deg); } }
+
+/* Current conditions mini strip */
+.cond-strip {
+  display: grid; grid-template-columns: repeat(2, 1fr); gap: .6rem;
+  padding: 1rem 1.4rem; border-top: 1px solid var(--border);
+}
+.cond-item {
+  display: flex; align-items: center; gap: .55rem;
+  padding: .4rem .5rem; border-radius: 7px;
+  transition: background .2s;
+}
+.cond-item:hover { background: var(--blue-light); }
+.cond-icon {
+  width: 28px; height: 28px; border-radius: 7px;
+  background: var(--subtle); display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.cond-label { font-size: .68rem; color: var(--muted); }
+.cond-val   { font-size: .85rem; font-weight: 700; color: var(--text); font-family: var(--mono); }
+
+/* RIGHT COLUMN */
+/* Empty state */
+.empty-state {
+  background: var(--white); border: 1px solid var(--border);
+  border-radius: var(--r); box-shadow: var(--shadow);
+  padding: 4rem 2rem; text-align: center;
+  display: flex; flex-direction: column; align-items: center; gap: .5rem;
+  min-height: 420px; justify-content: center;
+}
+.empty-icon-box {
+  width: 68px; height: 68px; background: var(--blue-light);
+  border-radius: 18px; display: flex; align-items: center; justify-content: center;
+  margin-bottom: .8rem;
+}
+.empty-title { font-weight: 700; font-size: 1.15rem; color: var(--text); }
+.empty-sub   { font-size: .85rem; color: var(--muted); line-height: 1.65; max-width: 300px; }
+
+/* Result gradient card */
+.result-card {
+  border-radius: var(--r); padding: 2rem 1.8rem;
+  position: relative; overflow: hidden;
+  box-shadow: var(--shadow-lg);
+  animation: rIn .45s cubic-bezier(.34,1.56,.64,1) both;
+}
+@keyframes rIn {
+  from { opacity:0; transform:scale(.96) translateY(10px); }
+  to   { opacity:1; transform:scale(1) translateY(0); }
+}
+.result-card::before {
+  content: ''; position: absolute;
+  top: -70px; right: -70px; width: 220px; height: 220px;
+  border-radius: 50%; background: rgba(255,255,255,.07); pointer-events: none;
+}
+.result-card::after {
+  content: ''; position: absolute;
+  bottom: -40px; left: -20px; width: 140px; height: 140px;
+  border-radius: 50%; background: rgba(255,255,255,.04); pointer-events: none;
+}
+
+.rc-low      { background: linear-gradient(135deg, var(--low-a), var(--low-b)); }
+.rc-moderate { background: linear-gradient(135deg, var(--mod-a), var(--mod-b)); }
+.rc-high     { background: linear-gradient(135deg, var(--hi-a), var(--hi-b)); }
+.rc-veryhigh { background: linear-gradient(135deg, var(--vhi-a), var(--vhi-b)); }
+
+.rc-top { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 1.8rem; }
+.rc-left { display: flex; align-items: center; gap: 1.1rem; }
+
+.rc-icon-box {
+  width: 62px; height: 62px; background: rgba(255,255,255,.18);
+  border-radius: 16px; display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.rc-eyebrow { font-size: .72rem; color: rgba(255,255,255,.7); font-weight: 500; margin-bottom: .3rem; letter-spacing: .04em; text-transform: uppercase; }
+.rc-level   { font-size: 2.1rem; font-weight: 800; color: #fff; letter-spacing: -.02em; line-height: 1.05; }
+
+.rc-right { text-align: right; }
+.rc-score-label { font-size: .68rem; color: rgba(255,255,255,.65); text-transform: uppercase; letter-spacing: .06em; margin-bottom: .1rem; }
+.rc-score-num   { font-size: 3.8rem; font-weight: 800; color: #fff; line-height: 1; font-family: var(--mono); }
+.rc-score-denom { font-size: .72rem; color: rgba(255,255,255,.55); }
+
+.rc-bottom {
+  border-top: 1px solid rgba(255,255,255,.2); padding-top: 1.2rem;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.rc-units-label { font-size: .72rem; color: rgba(255,255,255,.65); margin-bottom: .2rem; }
+.rc-units-val   { font-size: 1.5rem; font-weight: 700; color: #fff; font-family: var(--mono); }
+.rc-units-sub   { font-size: .72rem; color: rgba(255,255,255,.6); margin-top: 1px; }
+.rc-model-chip {
+  background: rgba(255,255,255,.18); color: #fff;
+  border: 1px solid rgba(255,255,255,.25); padding: .4rem 1rem;
+  border-radius: 999px; font-size: .78rem; font-weight: 600;
+}
+
+/* Distribution card */
+.dist-card { background: var(--white); border: 1px solid var(--border); border-radius: var(--r); padding: 1.4rem 1.6rem; box-shadow: var(--shadow); margin-top: 1.2rem; }
+.dist-card-head { display: flex; align-items: center; gap: .7rem; margin-bottom: 1.3rem; }
+.dist-card-icon { width: 36px; height: 36px; border-radius: 9px; display: flex; align-items: center; justify-content: center; }
+.dist-card-title { font-weight: 700; font-size: .88rem; color: var(--text); }
+.dist-card-sub   { font-size: .7rem; color: var(--muted); margin-top: 1px; }
+
+.dist-row {
+  margin-bottom: 1rem; padding: .4rem .5rem; border-radius: 7px;
+  transition: background .2s;
+}
+.dist-row:hover { background: var(--subtle); }
+.dist-row:last-child { margin-bottom: 0; }
+.dist-row-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: .38rem; }
+
+.dist-label-pill {
+  display: inline-flex; align-items: center; gap: .35rem;
+  padding: .22rem .65rem; border-radius: 5px; font-size: .75rem; font-weight: 600; border: 1px solid;
+}
+.dl-low      { background: #eff8ff; color: #0369a1;  border-color: #bae6fd; }
+.dl-moderate { background: #fffbeb; color: #92400e;  border-color: #fde68a; }
+.dl-high     { background: #f0fdf4; color: #065f46;  border-color: #a7f3d0; }
+.dl-veryhigh { background: #faf5ff; color: #6b21a8;  border-color: #ddd6fe; }
+
+.dist-pct  { font-family: var(--mono); font-size: .83rem; font-weight: 700; color: var(--text); }
+.dist-track { height: 9px; background: #f1f5f9; border-radius: 999px; overflow: hidden; }
+.dist-fill  { height: 100%; border-radius: 999px; width: 0%; transition: width .85s cubic-bezier(.34,1.56,.64,1); }
+.df-low      { background: var(--low-bar); }
+.df-moderate { background: var(--mod-bar); }
+.df-high     { background: var(--hi-bar); }
+.df-veryhigh { background: var(--vhi-bar); }
+
+/* Input params */
+.params-card { background: var(--white); border: 1px solid var(--border); border-radius: var(--r); padding: 1.3rem 1.6rem; box-shadow: var(--shadow); margin-top: 1.2rem; }
+.params-card-head { font-weight: 700; font-size: .82rem; color: var(--muted); text-transform: uppercase; letter-spacing: .07em; margin-bottom: .9rem; display: flex; align-items: center; gap: .5rem; }
+.params-card-head::before { content: ''; width: 16px; height: 2px; background: var(--blue); border-radius: 1px; }
+.params-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: .6rem; }
+.param-item {
+  background: var(--subtle); border-radius: var(--r-sm); padding: .55rem .75rem;
+  border: 1px solid transparent;
+  transition: border-color .2s, background .2s, transform .2s, box-shadow .2s;
+}
+.param-item:hover { background: var(--white); border-color: var(--blue-mid); transform: translateY(-1px); box-shadow: 0 2px 8px rgba(37,99,235,.1); }
+.param-key { font-size: .62rem; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; font-family: var(--mono); }
+.param-val { font-size: .85rem; font-weight: 700; color: var(--text); margin-top: 3px; font-family: var(--mono); }
+
+
+/* ACCENT TOP BORDER ON CARDS */
+.card-accent { border-top: 3px solid var(--blue); }
+.card-accent-green { border-top: 3px solid #10b981; }
+
+/* SECTION LABELS INSIDE FORM */
+.form-section {
+  font-family: var(--mono);
+  font-size: .63rem; font-weight: 600;
+  text-transform: uppercase; letter-spacing: .1em;
+  color: var(--muted);
+  display: flex; align-items: center; gap: .6rem;
+  margin: 1.3rem 0 .85rem;
+}
+.form-section::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+.form-section:first-child { margin-top: 0; }
+
+/* ARC GAUGE */
+.gauge-wrap {
+  display: flex; flex-direction: column; align-items: center;
+  padding: 1.4rem 1rem 0.8rem;
+}
+.gauge-svg { overflow: visible; }
+.gauge-track { fill: none; stroke: #f1f5f9; stroke-width: 10; stroke-linecap: round; }
+.gauge-fill  {
+  fill: none; stroke-width: 10; stroke-linecap: round;
+  stroke-dasharray: 220; stroke-dashoffset: 220;
+  transition: stroke-dashoffset 1.1s cubic-bezier(.34,1.56,.64,1), stroke .4s;
+  transform: rotate(145deg); transform-origin: 70px 70px;
+}
+.gauge-num {
+  font-family: var(--mono); font-size: 2.2rem; font-weight: 700;
+  text-anchor: middle; dominant-baseline: middle; fill: var(--text);
+  transition: fill .4s;
+}
+.gauge-label {
+  font-family: var(--sans); font-size: .68rem; font-weight: 600;
+  text-anchor: middle; fill: var(--muted); letter-spacing: .04em; text-transform: uppercase;
+}
+
+/* RECOMMENDATION CARD */
+.rec-card {
+  background: var(--white); border: 1px solid var(--border);
+  border-radius: var(--r); padding: 1.3rem 1.6rem;
+  box-shadow: var(--shadow); margin-top: 1.2rem;
+  border-left: 4px solid var(--blue);
+  animation: fadeUp .4s ease both; animation-delay: .15s;
+  transition: box-shadow .25s, transform .25s;
+}
+.rec-card:hover { box-shadow: 0 8px 28px rgba(15,23,42,.11); transform: translateY(-2px); }
+.rec-card-head {
+  display: flex; align-items: center; gap: .7rem; margin-bottom: .75rem;
+}
+.rec-icon {
+  width: 32px; height: 32px; border-radius: 8px;
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+.rec-title { font-weight: 700; font-size: .85rem; color: var(--text); }
+.rec-text  { font-size: .83rem; color: var(--text-2); line-height: 1.65; }
+
+/* BETTER EMPTY STATE */
+.empty-grid {
+  display: grid; grid-template-columns: repeat(3,1fr); gap: .5rem;
+  margin-top: 1.5rem; opacity: .35;
+}
+.empty-grid-item {
+  height: 9px; background: var(--border); border-radius: 999px;
+}
+.empty-grid-item:nth-child(2) { width: 75%; }
+.empty-grid-item:nth-child(5) { width: 85%; }
+
+/* SCORE ROW IN RESULT */
+.score-row {
+  display: flex; justify-content: center;
+  background: var(--subtle); border-radius: var(--r-sm);
+  padding: .2rem 0; margin-top: .5rem;
+}
+
+/* DIST CARD UPGRADE */
+.dist-card { position: relative; overflow: hidden; }
+.dist-card::before {
+  content: ''; position: absolute;
+  top: 0; left: 0; right: 0; height: 3px;
+  background: linear-gradient(90deg, var(--low-bar), var(--hi-bar), var(--vhi-bar));
+}
+
+/* RESULT UNITS MONO */
+.rc-units-val { font-family: var(--mono); }
+
+/* Animations */
+@keyframes fadeUp { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:none} }
+.card { animation: fadeUp .4s ease both; }
+.model-banner { animation: fadeUp .3s ease both; }
+
+@media (max-width: 900px) {
+  .main-grid { grid-template-columns: 1fr; }
+  .params-grid { grid-template-columns: repeat(2,1fr); }
+  .field-row { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+<div class="bg-blob"></div>
+<div class="page">
+
+  <!-- HEADER -->
+  <div class="site-header">
+    <div class="site-header-inner">
+      <div class="logo-box">
+        <svg width="24" height="24" fill="none" stroke="#fff" stroke-width="2" viewBox="0 0 24 24">
+          <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
+        </svg>
+      </div>
+      <div>
+        <div class="site-title">Sales Volume Prediction</div>
+        <div class="site-sub">ML-Powered Demand Forecasting · Smart-Demand</div>
+      </div>
+    </div>
+    <p class="site-desc">Random Forest machine learning model trained on the Brazilian E-Commerce (Olist) dataset. Predicts total sales volume per product category per month based on pricing, quality, and market factors.</p>
+  </div>
+
+  <!-- MODEL BANNER -->
+  <div class="model-banner">
+    <div class="banner-icon">
+      <svg width="22" height="22" fill="none" stroke="#fff" stroke-width="1.8" viewBox="0 0 24 24">
+        <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+      </svg>
+    </div>
+    <div>
+      <div class="banner-title">Random Forest Regressor</div>
+      <div class="banner-sub" id="bannerSub">Loading metrics…</div>
+    </div>
+    <div class="banner-right">
+      <div class="ready-badge">
+        <div class="ready-dot"></div>
+        Model Ready
+      </div>
+    </div>
+  </div>
+
+  <!-- MAIN GRID -->
+  <div class="main-grid">
+
+    <!-- LEFT: INPUT -->
+    <div style="display:flex; flex-direction:column; gap:1rem;">
+      <div class="card card-accent">
+        <div class="card-head">
+          <div class="card-head-icon icon-blue">
+            <svg width="18" height="18" fill="none" stroke="#fff" stroke-width="2" viewBox="0 0 24 24">
+              <rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/>
+              <rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/>
+            </svg>
+          </div>
+          <div>
+            <div class="card-head-title">Product Parameters</div>
+            <div class="card-head-sub">Category-level demand prediction</div>
+          </div>
+        </div>
+
+        <div class="form-body">
+          <div class="form-section">Product</div>
+          <div class="field">
+            <label class="field-label">Product Category</label>
+            <select class="f-select" id="category"></select>
+          </div>
+
+          <div class="form-section">Pricing & Logistics</div>
+          <div class="field-row">
+            <div class="field" style="margin:0">
+              <label class="field-label">Avg Price in Category</label>
+              <div class="input-row">
+                <input type="number" class="f-input" id="price" value="220000" min="0" max="22000000" step="10000"
+                       oninput="sync('price','priceS','priceBadge',v=>'Rp '+parseInt(v).toLocaleString('id-ID'))"/>
+                <span class="val-badge vb-blue" id="priceBadge">Rp 220.000</span>
+              </div>
+              <input type="range" class="f-range" id="priceS" min="0" max="22000000" step="10000" value="220000"
+                     oninput="syncS('priceS','price','priceBadge',v=>'Rp '+parseInt(v).toLocaleString('id-ID'))"/>
+              <div class="field-hint">Rata-rata harga produk di kategori ini (dalam Rupiah)</div>
+            </div>
+            <div class="field" style="margin:0">
+              <label class="field-label">Avg Freight Cost</label>
+              <div class="input-row">
+                <input type="number" class="f-input" id="freight" value="44000" min="0" max="1100000" step="5000"
+                       oninput="sync('freight','freightS','freightBadge',v=>'Rp '+parseInt(v).toLocaleString('id-ID'))"/>
+                <span class="val-badge vb-slate" id="freightBadge">Rp 44.000</span>
+              </div>
+              <input type="range" class="f-range" id="freightS" min="0" max="1100000" step="5000" value="44000"
+                     oninput="syncS('freightS','freight','freightBadge',v=>'Rp '+parseInt(v).toLocaleString('id-ID'))"/>
+              <div class="field-hint">Rata-rata ongkos kirim di kategori ini (dalam Rupiah)</div>
+            </div>
+          </div>
+
+          <div class="form-section">Quality & Promotion</div>
+          <div class="field">
+            <label class="field-label">Product Rating</label>
+            <div class="input-row">
+              <input type="number" class="f-input" id="rating" value="4.0" min="1" max="5" step="0.1"
+                     oninput="sync('rating','ratingS','ratingBadge',v=>parseFloat(v).toFixed(1)+' / 5',1)"/>
+              <span class="val-badge vb-amber" id="ratingBadge">4.0 / 5</span>
+            </div>
+            <input type="range" class="f-range" id="ratingS" min="1" max="5" step="0.1" value="4.0"
+                   oninput="syncS('ratingS','rating','ratingBadge',v=>parseFloat(v).toFixed(1)+' / 5',1)"/>
+            <div class="field-hint">Higher rating correlates with stronger demand</div>
+          </div>
+
+          <!-- Discount -->
+          <div class="field">
+            <label class="field-label">Discount Rate</label>
+            <div class="input-row">
+              <input type="number" class="f-input" id="discount" value="0" min="0" max="50" step="1"
+                     oninput="sync('discount','discountS','discountBadge',v=>v+'%')"/>
+              <span class="val-badge vb-green" id="discountBadge">0%</span>
+            </div>
+            <input type="range" class="f-range" id="discountS" min="0" max="50" step="1" value="0"
+                   oninput="syncS('discountS','discount','discountBadge',v=>v+'%')"/>
+            <div class="field-hint">Enter as percentage — 10 means 10% off</div>
+          </div>
+
+          <div class="form-section">Time & History</div>
+          <div class="field-row">
+            <div class="field" style="margin:0">
+              <label class="field-label">Target Month</label>
+              <select class="f-select" id="month">
+                <option value="1">January</option><option value="2">February</option>
+                <option value="3">March</option><option value="4">April</option>
+                <option value="5">May</option><option value="6">June</option>
+                <option value="7">July</option><option value="8">August</option>
+                <option value="9">September</option><option value="10">October</option>
+                <option value="11">November</option><option value="12">December</option>
+              </select>
+            </div>
+            <div class="field" style="margin:0">
+              <label class="field-label">Last Month Category Sales</label>
+              <div class="input-row" style="margin-bottom:0">
+                <input type="number" class="f-input" id="lastSales" value="100" min="0" max="5000" step="10"
+                       oninput="sync('lastSales',null,'lastBadge',v=>v+' units')"/>
+                <span class="val-badge vb-slate" id="lastBadge">10 units</span>
+              </div>
+              <div class="field-hint">Total units sold in this category last month</div>
+            </div>
+          </div>
+
+          <div class="form-section">Model</div>
+          <div class="field">
+            <label class="field-label">Prediction Model</label>
+            <div class="toggle-row">
+              <button class="toggle-btn active" id="btnRF" onclick="selModel('rf')">Random Forest</button>
+              <button class="toggle-btn" id="btnLR" onclick="selModel('lr')">Linear Regression</button>
+            </div>
+          </div>
+
+          <button class="predict-btn" id="predictBtn" onclick="predict()">
+            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+              <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
+            </svg>
+            Predict Sales Volume
+          </button>
+        </div>
+
+        <!-- Current conditions strip -->
+        <div class="cond-strip">
+          <div class="cond-item">
+            <div class="cond-icon">
+              <svg width="14" height="14" fill="none" stroke="var(--blue)" stroke-width="2" viewBox="0 0 24 24">
+                <line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+              </svg>
+            </div>
+            <div><div class="cond-label">Price</div><div class="cond-val" id="cPrice">Rp 220.000</div></div>
+          </div>
+          <div class="cond-item">
+            <div class="cond-icon">
+              <svg width="14" height="14" fill="none" stroke="var(--muted)" stroke-width="2" viewBox="0 0 24 24">
+                <rect x="1" y="3" width="15" height="13" rx="2"/><path d="M16 8h4l3 3v5h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/>
+              </svg>
+            </div>
+            <div><div class="cond-label">Freight</div><div class="cond-val" id="cFreight">Rp 44.000</div></div>
+          </div>
+          <div class="cond-item">
+            <div class="cond-icon">
+              <svg width="14" height="14" fill="none" stroke="#d97706" stroke-width="2" viewBox="0 0 24 24">
+                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+              </svg>
+            </div>
+            <div><div class="cond-label">Rating</div><div class="cond-val" id="cRating">4.0 / 5</div></div>
+          </div>
+          <div class="cond-item">
+            <div class="cond-icon">
+              <svg width="14" height="14" fill="none" stroke="#15803d" stroke-width="2" viewBox="0 0 24 24">
+                <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+              </svg>
+            </div>
+            <div><div class="cond-label">Discount</div><div class="cond-val" id="cDiscount">0%</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT: OUTPUT -->
+    <div id="rightCol">
+
+      <!-- Empty state -->
+      <div id="emptyState">
+        <div class="empty-state">
+          <div class="empty-icon-box">
+            <svg width="28" height="28" fill="none" stroke="var(--blue)" stroke-width="1.8" viewBox="0 0 24 24">
+              <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
+            </svg>
+          </div>
+          <div class="empty-title">Ready to Predict</div>
+          <div class="empty-sub">Adjust the product parameters and click <strong>Predict Sales Volume</strong> to get your ML-powered demand forecast.</div>
+          <div class="empty-grid">
+            <div class="empty-grid-item"></div><div class="empty-grid-item"></div><div class="empty-grid-item"></div>
+            <div class="empty-grid-item"></div><div class="empty-grid-item"></div><div class="empty-grid-item"></div>
+            <div class="empty-grid-item"></div><div class="empty-grid-item"></div><div class="empty-grid-item"></div>
+          </div>
+        </div>
+
+        <!-- Perf table when idle -->
+        <div class="params-card" style="margin-top:1.2rem">
+          <div class="params-card-head">Model Performance</div>
+          <div class="params-grid" id="perfGrid">
+            <div class="param-item"><div class="param-key">RF Test R²</div><div class="param-val" id="p-rfR2">—</div></div>
+            <div class="param-item"><div class="param-key">RF MAE</div><div class="param-val" id="p-rfMAE">—</div></div>
+            <div class="param-item"><div class="param-key">RF RMSE</div><div class="param-val" id="p-rfRMSE">—</div></div>
+            <div class="param-item"><div class="param-key">LR Test R²</div><div class="param-val" id="p-lrR2">—</div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Result area -->
+      <div id="resultArea" style="display:none">
+
+        <!-- Result card -->
+        <div class="result-card" id="resultCard">
+          <div class="rc-top">
+            <div class="rc-left">
+              <div class="rc-icon-box">
+                <svg width="28" height="28" fill="none" stroke="#fff" stroke-width="1.8" viewBox="0 0 24 24">
+                  <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
+                </svg>
+              </div>
+              <div>
+                <div class="rc-eyebrow">Predicted Demand Level</div>
+                <div class="rc-level" id="rcLevel">—</div>
+              </div>
+            </div>
+            <div class="rc-right">
+              <div class="gauge-wrap">
+                <svg class="gauge-svg" width="140" height="100" viewBox="0 0 140 100">
+                  <path class="gauge-track" d="M 20 80 A 50 50 0 1 1 120 80"/>
+                  <path class="gauge-fill" id="gaugeFill" d="M 20 80 A 50 50 0 1 1 120 80" stroke="#fff"/>
+                  <text class="gauge-num" id="rcScore" x="70" y="65">—</text>
+                  <text class="gauge-label" x="70" y="96">/ 100</text>
+                </svg>
+              </div>
+            </div>
+          </div>
+          <div class="rc-bottom">
+            <div>
+              <div class="rc-units-label">Estimated Units Sold</div>
+              <div class="rc-units-val" id="rcUnits">—</div>
+              <div class="rc-units-sub" id="rcModelName">—</div>
+            </div>
+            <div class="rc-model-chip" id="rcChip">Random Forest</div>
+          </div>
+        </div>
+
+        <!-- Distribution -->
+        <div class="dist-card card-accent-green">
+          <div class="dist-card-head">
+            <div class="dist-card-icon icon-blue" style="width:36px;height:36px;border-radius:9px;">
+              <svg width="18" height="18" fill="none" stroke="#fff" stroke-width="2" viewBox="0 0 24 24">
+                <line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/>
+                <line x1="6" y1="20" x2="6" y2="14"/>
+              </svg>
+            </div>
+            <div>
+              <div class="dist-card-title">Demand Probability Distribution</div>
+              <div class="dist-card-sub">Based on individual tree votes (RF) or heuristic estimate (LR)</div>
+            </div>
+          </div>
+          <div id="distBars"></div>
+        </div>
+
+        <!-- Input params -->
+        <div class="params-card">
+          <div class="params-card-head">Input Parameters</div>
+          <div class="params-grid" id="paramsGrid"></div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const MONTHS = ["January","February","March","April","May","June",
+                "July","August","September","October","November","December"];
+
+const RC_CLASS = { low:'rc-low', moderate:'rc-moderate', high:'rc-high', veryhigh:'rc-veryhigh' };
+const DIST_META = {
+  Low:        { pill:'dl-low',      fill:'df-low'      },
+  Moderate:   { pill:'dl-moderate', fill:'df-moderate' },
+  High:       { pill:'dl-high',     fill:'df-high'     },
+  "Very High":{ pill:'dl-veryhigh', fill:'df-veryhigh' },
+};
+
+let selMdl = 'rf';
+let cfg    = null;
+
+// Init
+async function init() {
+  try {
+    const r = await fetch('/api/config');
+    cfg = await r.json();
+
+    const sel = document.getElementById('category');
+    cfg.categories.forEach(c => {
+      const o = document.createElement('option');
+      o.value = o.textContent = c;
+      sel.appendChild(o);
+    });
+
+    const rf = cfg.model_metrics.random_forest;
+    const lr = cfg.model_metrics.linear_regression;
+
+    document.getElementById('bannerSub').textContent =
+      `Test R² ${rf.test_r2} · MAE ${rf.test_mae} · RMSE ${rf.test_rmse} · Olist Dataset`;
+    document.getElementById('p-rfR2').textContent   = rf.test_r2;
+    document.getElementById('p-rfMAE').textContent  = rf.test_mae;
+    document.getElementById('p-rfRMSE').textContent = rf.test_rmse;
+    document.getElementById('p-lrR2').textContent   = lr.test_r2;
+  } catch(e) { console.error(e); }
+}
+
+// Sync helpers
+function sync(inputId, sliderId, badgeId, fmt, dec=0) {
+  const v = parseFloat(document.getElementById(inputId).value) || 0;
+  document.getElementById(badgeId).textContent = fmt(v.toFixed(dec));
+  if (sliderId) document.getElementById(sliderId).value = v;
+  refreshStrip();
+}
+function syncS(sliderId, inputId, badgeId, fmt, dec=0) {
+  const v = parseFloat(document.getElementById(sliderId).value) || 0;
+  document.getElementById(inputId).value = v.toFixed(dec);
+  document.getElementById(badgeId).textContent = fmt(v.toFixed(dec));
+  refreshStrip();
+}
+function refreshStrip() {
+  document.getElementById('cPrice').textContent    = 'Rp ' + parseInt(document.getElementById('price').value||0).toLocaleString('id-ID');
+  document.getElementById('cFreight').textContent  = 'Rp ' + parseInt(document.getElementById('freight').value||0).toLocaleString('id-ID');
+  document.getElementById('cRating').textContent   = (parseFloat(document.getElementById('rating').value)||0).toFixed(1) + ' / 5';
+  document.getElementById('cDiscount').textContent = (parseFloat(document.getElementById('discount').value)||0).toFixed(0) + '%';
+}
+
+function selModel(m) {
+  selMdl = m;
+  document.getElementById('btnRF').classList.toggle('active', m==='rf');
+  document.getElementById('btnLR').classList.toggle('active', m==='lr');
+}
+
+// Predict
+async function predict() {
+  const btn = document.getElementById('predictBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<div class="spin"></div> Predicting…';
+
+  const discountPct = parseFloat(document.getElementById('discount').value) || 0;
+  // Convert IDR to BRL (1 BRL = Rp 2.200)
+  const IDR_TO_BRL = 2200;
+  const priceIDR   = parseFloat(document.getElementById('price').value)   || 0;
+  const freightIDR = parseFloat(document.getElementById('freight').value) || 0;
+
+  const payload = {
+    category        : document.getElementById('category').value,
+    avg_price       : priceIDR / IDR_TO_BRL,
+    avg_freight     : freightIDR / IDR_TO_BRL,
+    avg_rating      : parseFloat(document.getElementById('rating').value)    || 0,
+    discount        : discountPct,
+    num_products    : 50,
+    month           : parseInt(document.getElementById('month').value),
+    last_month_sales: parseFloat(document.getElementById('lastSales').value) || 0,
+    model           : selMdl,
+    // Keep IDR values for display purposes
+    priceIDR        : priceIDR,
+    freightIDR      : freightIDR,
+  };
+
+  try {
+    const res  = await fetch('/api/predict', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify(payload),
+    });
+    if (!res.ok) {
+      const err = await res.text();
+      console.error('Server error:', err);
+      alert('Prediction failed. Make sure the server is running on port 8000.');
+      return;
+    }
+    const data = await res.json();
+    renderResult(data, payload, discountPct);
+  } catch(e) {
+    console.error('Fetch error:', e);
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = `
+      <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+        <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
+      </svg>
+      Predict Sales Volume`;
+  }
+}
+
+const RECS = {
+  low:      { text: "Demand is predicted to be low this month. Consider running targeted promotions, offering bundle deals, or reviewing the pricing strategy to stimulate buyer interest.", color: "#0284c7", icon: "ℹ" },
+  moderate: { text: "Moderate demand is expected. This is a stable period — maintain current stock levels and consider small discounts to convert undecided buyers.", color: "#d97706", icon: "~" },
+  high:     { text: "Strong demand predicted. Ensure sufficient inventory is available and consider optimizing product listings to capture maximum sales during this period.", color: "#059669", icon: "↑" },
+  veryhigh: { text: "Very high demand is forecasted. Prioritize stock replenishment immediately, review logistics capacity, and consider upselling complementary products.", color: "#7c3aed", icon: "↑↑" },
+};
+
+const GAUGE_STROKE = { low:'#0ea5e9', moderate:'#f59e0b', high:'#10b981', veryhigh:'#8b5cf6' };
+
+function animateCount(el, target, duration=900) {
+  const start = parseInt(el.textContent) || 0;
+  const startTime = performance.now();
+  function step(now) {
+    const p = Math.min((now - startTime) / duration, 1);
+    const ease = 1 - Math.pow(1 - p, 3);
+    el.textContent = Math.round(start + (target - start) * ease);
+    if (p < 1) requestAnimationFrame(step);
+    else el.textContent = target;
+  }
+  requestAnimationFrame(step);
+}
+
+function renderResult(data, payload, discountPct) {
+  document.getElementById('emptyState').style.display = 'none';
+  document.getElementById('resultArea').style.display  = 'block';
+
+  // Card
+  const card = document.getElementById('resultCard');
+  card.className = `result-card ${RC_CLASS[data.level_key]}`;
+  card.style.animation = 'none';
+  void card.offsetWidth;
+  card.style.animation = '';
+
+  document.getElementById('rcLevel').textContent     = data.level;
+  document.getElementById('rcUnits').textContent     = data.units + ' units this month';
+  document.getElementById('rcModelName').textContent = data.model_name;
+  document.getElementById('rcChip').textContent      = data.model_name;
+
+  // Animated score counter (SVG text element)
+  const scoreEl = document.getElementById('rcScore');
+  if (scoreEl) {
+    scoreEl.style.fill = '#fff';
+    animateCount(scoreEl, data.score, 900);
+  }
+
+  // Arc gauge animation
+  const fill = document.getElementById('gaugeFill');
+  if (fill) {
+    const totalArc = 220;
+    const offset = totalArc - (data.score / 100) * totalArc;
+    fill.style.transition = 'none';
+    fill.style.stroke = GAUGE_STROKE[data.level_key] || '#fff';
+    fill.style.strokeDasharray = totalArc;
+    fill.style.strokeDashoffset = totalArc;
+    setTimeout(() => {
+      fill.style.transition = 'stroke-dashoffset 1.1s cubic-bezier(.34,1.56,.64,1)';
+      fill.style.strokeDashoffset = offset;
+    }, 80);
+  }
+
+  // Recommendation
+  const rec = RECS[data.level_key];
+  if (rec) {
+    const recCard = document.getElementById('recCard');
+    const recText = document.getElementById('recText');
+    const recIcon = recCard ? recCard.querySelector('.rec-icon') : null;
+    if (recCard) {
+      recCard.style.borderLeftColor = rec.color;
+      recCard.style.display = 'block';
+    }
+    if (recIcon) recIcon.style.background = `linear-gradient(135deg, ${rec.color}, ${rec.color}cc)`;
+    if (recText) recText.textContent = rec.text;
+  }
+
+  // Distribution
+  const distEl = document.getElementById('distBars');
+  distEl.innerHTML = '';
+  Object.entries(data.distribution).forEach(([name, pct]) => {
+    const m = DIST_META[name];
+    distEl.innerHTML += `
+      <div class="dist-row">
+        <div class="dist-row-top">
+          <span class="dist-label-pill ${m.pill}">${name}</span>
+          <span class="dist-pct">${pct}%</span>
+        </div>
+        <div class="dist-track">
+          <div class="dist-fill ${m.fill}" id="df-${name.replace(' ','')}"></div>
+        </div>
+      </div>`;
+  });
+  setTimeout(() => {
+    Object.entries(data.distribution).forEach(([name, pct]) => {
+      const el = document.getElementById('df-' + name.replace(' ',''));
+      if (el) el.style.width = pct + '%';
+    });
+  }, 50);
+
+  // Params
+  document.getElementById('paramsGrid').innerHTML = `
+    <div class="param-item"><div class="param-key">Category</div><div class="param-val" style="font-size:.72rem;font-family:var(--sans)">${payload.category.slice(0,18)}</div></div>
+    <div class="param-item"><div class="param-key">Month</div><div class="param-val">${MONTHS[payload.month-1]}</div></div>
+    <div class="param-item"><div class="param-key">Avg Price</div><div class="param-val">Rp ${payload.priceIDR.toLocaleString("id-ID")}</div></div>
+    <div class="param-item"><div class="param-key">Avg Freight</div><div class="param-val">Rp ${payload.freightIDR.toLocaleString("id-ID")}</div></div>
+    <div class="param-item"><div class="param-key">Avg Rating</div><div class="param-val">${payload.avg_rating.toFixed(1)} / 5</div></div>
+    <div class="param-item"><div class="param-key">Discount</div><div class="param-val">${discountPct}%</div></div>
+    <div class="param-item"><div class="param-key">Last Month</div><div class="param-val">${payload.last_month_sales} units</div></div>
+    <div class="param-item"><div class="param-key">Seasonality</div><div class="param-val">${data.seasonality_index}</div></div>
+  `;
+}
+
+init();
+
+// Sync all sliders with their input defaults on page load
+(function syncDefaults() {
+  const pairs = [
+    ['price',    'priceS',    'priceBadge',    v => 'Rp ' + parseInt(v).toLocaleString('id-ID')],
+    ['freight',  'freightS',  'freightBadge',  v => 'Rp ' + parseInt(v).toLocaleString('id-ID')],
+    ['rating',   'ratingS',   'ratingBadge',   v => parseFloat(v).toFixed(1) + ' / 5'],
+    ['discount', 'discountS', 'discountBadge', v => v + '%'],
+  ];
+  pairs.forEach(([inputId, sliderId, badgeId, fmt]) => {
+    const input  = document.getElementById(inputId);
+    const slider = document.getElementById(sliderId);
+    const badge  = document.getElementById(badgeId);
+    if (!input || !slider || !badge) return;
+    slider.value = input.value;
+    badge.textContent = fmt(input.value);
+  });
+  refreshStrip();
+})();
+</script>
+</body>
+</html>
