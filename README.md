@@ -1,5 +1,7 @@
 # Smart-Demand: Sales Volume Prediction System
 
+**🔗 Live Demo: [https://smart-demand-production-5e7f.up.railway.app/](https://smart-demand-production-5e7f.up.railway.app/)**
+
 Random Forest machine learning model trained on the Brazilian E-Commerce (Olist) dataset. Predicts total sales volume per product category per month based on pricing, quality, and market factors.
 
 COMP6577001 - Machine Learning | Final Project
@@ -25,7 +27,7 @@ pip install -r requirements.txt
 python main.py
 ```
 
-Buka browser di http://localhost:8000
+Buka browser di http://127.0.0.1:8000
 
 ## Deployment
 
