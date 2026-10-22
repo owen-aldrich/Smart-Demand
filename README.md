@@ -1,7 +1,5 @@
 # Smart-Demand: Sales Volume Prediction System
 
-**🔗 Live Demo: [https://smart-demand-production-5e7f.up.railway.app/](https://smart-demand-production-5e7f.up.railway.app/)**
-
 Random Forest machine learning model trained on the Brazilian E-Commerce (Olist) dataset. Predicts total sales volume per product category per month based on pricing, quality, and market factors.
 
 COMP6577001 - Machine Learning | Final Project
@@ -31,7 +29,7 @@ Buka browser di http://127.0.0.1:8000
 
 ## Deployment
 
-App ini di-deploy ke Railway menggunakan FastAPI dan dapat diakses melalui link di bagian atas dokumen ini. Repository ini sudah include semua file yang dibutuhkan (kode, model, dan konfigurasi) sehingga dapat di-deploy ulang ke platform serupa seperti Railway atau Render jika diperlukan.
+Saat ini aplikasi belum memiliki demo yang di-hosting. Repository ini sudah mencakup kode, model, dan konfigurasi yang diperlukan untuk di-deploy ulang ke platform seperti Railway atau Render.
 
 ## Model Performance
 
@@ -57,4 +55,3 @@ Setelah evaluasi, granularitas data diubah menjadi per kategori produk per bulan
 - Backend: FastAPI (Python)
 - Frontend: HTML / CSS / Vanilla JS
 - Model: scikit-learn (Random Forest Regressor)
-- Hosting: Railway
