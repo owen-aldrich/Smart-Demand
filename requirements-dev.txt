@@ -1,0 +1,3 @@
+-r requirements.txt
+-r requirements-training.txt
+httpx>=0.27,<1.0

@@ -1,0 +1,8 @@
+# Notebook training and its local verification; API dependencies stay in requirements.txt.
+numpy>=1.24
+pandas>=2.0
+scikit-learn>=1.3
+joblib>=1.3
+matplotlib>=3.7
+ipython>=8.0
+nbformat>=5.9

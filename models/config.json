@@ -1,17 +1,35 @@
 {
+  "target": "quantity_ordered",
+  "target_definition": "count_order_items_by_purchase_month_all_recorded_orders",
   "features": [
-    "avg_price",
-    "discount_rate",
-    "avg_freight",
-    "avg_rating",
-    "num_products",
-    "price_range",
-    "category_encoded",
-    "seasonality_index",
-    "last_month_sales"
+    "sales_avg_3m",
+    "prev_avg_price",
+    "prev_avg_freight",
+    "prev_avg_rating",
+    "prev_num_products",
+    "prev_price_range",
+    "category",
+    "seasonality_index"
   ],
-  "target": "quantity_sold",
-  "granularity": "category_month",
+  "history_window_months": 3,
+  "seasonality_index": {
+    "1": 0.501327935222672,
+    "2": 0.5442947368421053,
+    "3": 0.7614135338345863,
+    "4": 0.0,
+    "5": 0.28520300751879707,
+    "6": 0.06590163934426234,
+    "7": 0.2130717703349282,
+    "8": 0.26998142414860693,
+    "9": 0.23766590389016023,
+    "10": 0.2974736842105264,
+    "11": 1.0,
+    "12": 0.4515284210526315
+  },
+  "seasonality_fallback": 0.3856551713666064,
+  "category_encoder_file": "label_encoder.joblib",
+  "category_encoder_type": "OneHotEncoder",
+  "category_encoder_included_in_model_pipelines": true,
   "categories": [
     "agro_industry_and_commerce",
     "air_conditioning",
@@ -75,7 +93,6 @@
     "pc_gamer",
     "perfumery",
     "pet_shop",
-    "portateis_cozinha_e_preparadores_de_alimentos",
     "security_and_services",
     "signaling_and_security",
     "small_appliances",
@@ -88,36 +105,72 @@
     "unknown",
     "watches_gifts"
   ],
-  "seasonality_index": {
-    "1": 0.0,
-    "2": 0.3682129983138244,
-    "3": 0.8588793957369206,
-    "4": 0.5793510665743897,
-    "5": 1.0,
-    "6": 0.5790845001942406,
-    "7": 0.7116226714115473,
-    "8": 0.5264196762396955,
-    "9": 0.5882733508945792,
-    "10": 0.07244433706125915,
-    "11": 0.43866846247493946,
-    "12": 0.9763744675106476
+  "rating_policy": "purchase_month_reviews_answered_before_next_month_start",
+  "review_availability_timestamp": "review_answer_timestamp",
+  "history_start": "2016-09",
+  "history_end": "2018-08",
+  "excluded_latest_source_month": "2018-09",
+  "forecast_protocol": "one_month_ahead_with_updated_observed_history",
+  "cold_start_categories_evaluated": false,
+  "selected_model": "Random Forest",
+  "model_selection_policy": "random_forest_fixed_before_test_no_tuning",
+  "test_fraction_of_calendar_months": 0.2,
+  "rf_parameters": {
+    "n_estimators": 300,
+    "max_depth": 20,
+    "min_samples_split": 5,
+    "min_samples_leaf": 2,
+    "max_features": "sqrt",
+    "bootstrap": true,
+    "random_state": 42,
+    "n_jobs": -1
   },
-  "log_transform": false,
-  "target_stats": {
-    "mean": 52.31,
-    "median": 17.0,
-    "max": 348.0
-  },
-  "model_metrics": {
-    "random_forest": {
-      "test_mae": 8.9184,
-      "test_rmse": 17.2225,
-      "test_r2": 0.9541
+  "trained_through": "2018-03",
+  "split_summary": [
+    {
+      "Split": "Train",
+      "Start": "2016-12",
+      "End": "2018-03",
+      "Months": 16,
+      "Rows": 901
     },
-    "linear_regression": {
-      "test_mae": 9.4527,
-      "test_rmse": 18.9252,
-      "test_r2": 0.9445
+    {
+      "Split": "Test",
+      "Start": "2018-04",
+      "End": "2018-08",
+      "Months": 5,
+      "Rows": 366
     }
+  ],
+  "test_metrics": {
+    "Last Month Baseline": {
+      "MAE": 16.7786885246,
+      "RMSE": 33.2356629183,
+      "R2": 0.9639766285
+    },
+    "3-Month Average Baseline": {
+      "MAE": 20.9499089253,
+      "RMSE": 43.9282719706,
+      "R2": 0.9370691055
+    },
+    "Linear Regression": {
+      "MAE": 23.3814463199,
+      "RMSE": 45.6279485836,
+      "R2": 0.9321050375
+    },
+    "Random Forest": {
+      "MAE": 27.4953936397,
+      "RMSE": 58.9179295448,
+      "R2": 0.8867936939
+    }
+  },
+  "prediction_postprocessing": "clip_lower_zero_no_rounding",
+  "source_time_assumption": "items, prices and freight available at purchase; static archive",
+  "random_state": 42,
+  "versions": {
+    "numpy": "2.4.6",
+    "pandas": "2.2.3",
+    "scikit-learn": "1.6.1",
+    "joblib": "1.6.0"
   }
 }

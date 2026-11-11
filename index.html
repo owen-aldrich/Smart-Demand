@@ -4,6 +4,7 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>SmartDemand</title>
+<link rel="icon" type="image/svg+xml" href="/favicon.svg"/>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet"/>
 <style>
@@ -124,7 +125,8 @@ body::after {
 @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.35} }
 
 /* MAIN GRID */
-.main-grid { display: grid; grid-template-columns: 5fr 7fr; gap: 1.5rem; align-items: start; }
+.main-grid { display: grid; grid-template-columns: minmax(0,5fr) minmax(0,7fr); gap: 1.5rem; align-items: start; }
+.main-grid > *, .field, .f-select { min-width: 0; }
 
 /* CARD */
 .card {
@@ -162,11 +164,19 @@ body::after {
   color: var(--text); margin-bottom: .45rem;
 }
 .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: .8rem; margin-bottom: 1.2rem; }
+.history-row { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.history-summary { padding: .7rem; border-radius: var(--r-sm); background: var(--blue-light); color: var(--blue-2); font-size: .8rem; margin-bottom: 1rem; }
+.form-error { color: #b91c1c; font-size: .8rem; line-height: 1.5; margin-top: .8rem; }
+.forecast-note { margin-top: .7rem; font-size: .72rem; color: var(--muted); line-height: 1.5; }
+@media (max-width: 520px) {
+  .field-row, .history-row { grid-template-columns: 1fr; }
+  .form-body { padding: 1rem; }
+}
 
 /* Input + badge */
 .input-row { display: flex; align-items: center; gap: .5rem; margin-bottom: .45rem; }
 .f-input {
-  flex: 1; height: 40px;
+  flex: 1; width: 100%; min-width: 0; height: 40px;
   border: 1.5px solid var(--border-2);
   border-radius: var(--r-sm);
   font-family: var(--sans); font-size: .88rem; color: var(--text);
@@ -416,6 +426,7 @@ input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; }
 .param-item:hover { background: var(--white); border-color: var(--blue-mid); transform: translateY(-1px); box-shadow: 0 2px 8px rgba(37,99,235,.1); }
 .param-key { font-size: .62rem; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; font-family: var(--mono); }
 .param-val { font-size: .85rem; font-weight: 700; color: var(--text); margin-top: 3px; font-family: var(--mono); }
+.param-val { overflow-wrap: anywhere; }
 
 
 /* ACCENT TOP BORDER ON CARDS */
@@ -512,9 +523,18 @@ input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; }
 .model-banner { animation: fadeUp .3s ease both; }
 
 @media (max-width: 900px) {
-  .main-grid { grid-template-columns: 1fr; }
-  .params-grid { grid-template-columns: repeat(2,1fr); }
+  .main-grid { grid-template-columns: minmax(0,1fr); }
+  .params-grid { grid-template-columns: repeat(2,minmax(0,1fr)); }
   .field-row { grid-template-columns: 1fr; }
+}
+@media (max-width: 520px) {
+  .model-banner { flex-wrap: wrap; }
+  .model-banner > div:nth-child(2) { flex: 1; min-width: 0; }
+  .banner-right { margin-left: 0; }
+  .card-head { padding: 1rem; }
+  .result-card { padding: 1.2rem; }
+  .rc-top, .rc-bottom { flex-wrap: wrap; gap: .8rem; }
+  .rc-level { font-size: 1.6rem; }
 }
 </style>
 </head>
@@ -535,7 +555,7 @@ input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; }
         <div class="site-sub">ML-Powered Demand Forecasting · Smart-Demand</div>
       </div>
     </div>
-    <p class="site-desc">Random Forest machine learning model trained on the Brazilian E-Commerce (Olist) dataset. Predicts total sales volume per product category per month based on pricing, quality, and market factors.</p>
+    <p class="site-desc">Forecast next-month order quantity per category using the previous three months of orders and last month's recorded conditions. Includes orders that may later be cancelled. Prices use Brazilian reais (BRL), matching the Olist training data.</p>
   </div>
 
   <!-- MODEL BANNER -->
@@ -546,7 +566,7 @@ input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; }
       </svg>
     </div>
     <div>
-      <div class="banner-title">Random Forest Regressor</div>
+      <div class="banner-title" id="bannerTitle">Random Forest Regressor</div>
       <div class="banner-sub" id="bannerSub">Loading metrics…</div>
     </div>
     <div class="banner-right">
@@ -571,110 +591,94 @@ input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; }
             </svg>
           </div>
           <div>
-            <div class="card-head-title">Product Parameters</div>
-            <div class="card-head-sub">Category-level demand prediction</div>
+            <div class="card-head-title">Category History</div>
+            <div class="card-head-sub">Only use information known before the target month</div>
           </div>
         </div>
 
-        <div class="form-body">
-          <div class="form-section">Product</div>
-          <div class="field">
-            <label class="field-label">Product Category</label>
-            <select class="f-select" id="category"></select>
-          </div>
-
-          <div class="form-section">Pricing & Logistics</div>
+        <form class="form-body" id="predictionForm" onsubmit="event.preventDefault(); predict();">
+          <div class="form-section">Forecast</div>
           <div class="field-row">
             <div class="field" style="margin:0">
-              <label class="field-label">Avg Price in Category</label>
-              <div class="input-row">
-                <input type="number" class="f-input" id="price" value="220000" min="0" max="22000000" step="10000"
-                       oninput="sync('price','priceS','priceBadge',v=>'Rp '+parseInt(v).toLocaleString('id-ID'))"/>
-                <span class="val-badge vb-blue" id="priceBadge">Rp 220.000</span>
-              </div>
-              <input type="range" class="f-range" id="priceS" min="0" max="22000000" step="10000" value="220000"
-                     oninput="syncS('priceS','price','priceBadge',v=>'Rp '+parseInt(v).toLocaleString('id-ID'))"/>
-              <div class="field-hint">Rata-rata harga produk di kategori ini (dalam Rupiah)</div>
+              <label class="field-label" for="category">Product Category</label>
+              <select class="f-select" id="category" required></select>
             </div>
             <div class="field" style="margin:0">
-              <label class="field-label">Avg Freight Cost</label>
-              <div class="input-row">
-                <input type="number" class="f-input" id="freight" value="44000" min="0" max="1100000" step="5000"
-                       oninput="sync('freight','freightS','freightBadge',v=>'Rp '+parseInt(v).toLocaleString('id-ID'))"/>
-                <span class="val-badge vb-slate" id="freightBadge">Rp 44.000</span>
-              </div>
-              <input type="range" class="f-range" id="freightS" min="0" max="1100000" step="5000" value="44000"
-                     oninput="syncS('freightS','freight','freightBadge',v=>'Rp '+parseInt(v).toLocaleString('id-ID'))"/>
-              <div class="field-hint">Rata-rata ongkos kirim di kategori ini (dalam Rupiah)</div>
-            </div>
-          </div>
-
-          <div class="form-section">Quality & Promotion</div>
-          <div class="field">
-            <label class="field-label">Product Rating</label>
-            <div class="input-row">
-              <input type="number" class="f-input" id="rating" value="4.0" min="1" max="5" step="0.1"
-                     oninput="sync('rating','ratingS','ratingBadge',v=>parseFloat(v).toFixed(1)+' / 5',1)"/>
-              <span class="val-badge vb-amber" id="ratingBadge">4.0 / 5</span>
-            </div>
-            <input type="range" class="f-range" id="ratingS" min="1" max="5" step="0.1" value="4.0"
-                   oninput="syncS('ratingS','rating','ratingBadge',v=>parseFloat(v).toFixed(1)+' / 5',1)"/>
-            <div class="field-hint">Higher rating correlates with stronger demand</div>
-          </div>
-
-          <!-- Discount -->
-          <div class="field">
-            <label class="field-label">Discount Rate</label>
-            <div class="input-row">
-              <input type="number" class="f-input" id="discount" value="0" min="0" max="50" step="1"
-                     oninput="sync('discount','discountS','discountBadge',v=>v+'%')"/>
-              <span class="val-badge vb-green" id="discountBadge">0%</span>
-            </div>
-            <input type="range" class="f-range" id="discountS" min="0" max="50" step="1" value="0"
-                   oninput="syncS('discountS','discount','discountBadge',v=>v+'%')"/>
-            <div class="field-hint">Enter as percentage — 10 means 10% off</div>
-          </div>
-
-          <div class="form-section">Time & History</div>
-          <div class="field-row">
-            <div class="field" style="margin:0">
-              <label class="field-label">Target Month</label>
-              <select class="f-select" id="month">
+              <label class="field-label" for="month">Target Month</label>
+              <select class="f-select" id="month" onchange="refreshStrip()">
                 <option value="1">January</option><option value="2">February</option>
                 <option value="3">March</option><option value="4">April</option>
-                <option value="5">May</option><option value="6">June</option>
+                <option value="5" selected>May</option><option value="6">June</option>
                 <option value="7">July</option><option value="8">August</option>
                 <option value="9">September</option><option value="10">October</option>
                 <option value="11">November</option><option value="12">December</option>
               </select>
             </div>
+          </div>
+
+          <div class="form-section">Previous Three Months</div>
+          <div class="field-row history-row">
             <div class="field" style="margin:0">
-              <label class="field-label">Last Month Category Sales</label>
-              <div class="input-row" style="margin-bottom:0">
-                <input type="number" class="f-input" id="lastSales" value="100" min="0" max="5000" step="10"
-                       oninput="sync('lastSales',null,'lastBadge',v=>v+' units')"/>
-                <span class="val-badge vb-slate" id="lastBadge">10 units</span>
-              </div>
-              <div class="field-hint">Total units sold in this category last month</div>
+              <label class="field-label" id="historyLabel1" for="sales1">Orders (t-3)</label>
+              <input type="number" class="f-input" id="sales1" value="80" min="0" step="1" required oninput="refreshStrip()"/>
             </div>
+            <div class="field" style="margin:0">
+              <label class="field-label" id="historyLabel2" for="sales2">Orders (t-2)</label>
+              <input type="number" class="f-input" id="sales2" value="90" min="0" step="1" required oninput="refreshStrip()"/>
+            </div>
+            <div class="field" style="margin:0">
+              <label class="field-label" id="historyLabel3" for="sales3">Orders (t-1)</label>
+              <input type="number" class="f-input" id="sales3" value="100" min="0" step="1" required oninput="refreshStrip()"/>
+            </div>
+          </div>
+          <div class="history-summary">Three-month average: <strong id="salesAverage">90.00</strong> units</div>
+
+          <div class="form-section">Previous-Month Conditions</div>
+          <p class="field-hint" id="previousMonthHint" style="margin-bottom:1rem">Use last month's observed transactions only.</p>
+          <div class="field-row">
+            <div class="field" style="margin:0">
+              <label class="field-label" for="price">Average Item Price (BRL)</label>
+              <input type="number" class="f-input" id="price" value="100" min="0" step="0.01" placeholder="Unavailable" oninput="refreshStrip()"/>
+            </div>
+            <div class="field" style="margin:0">
+              <label class="field-label" for="freight">Average Freight (BRL)</label>
+              <input type="number" class="f-input" id="freight" value="20" min="0" step="0.01" placeholder="Unavailable" oninput="refreshStrip()"/>
+            </div>
+          </div>
+          <div class="field-row">
+            <div class="field" style="margin:0">
+              <label class="field-label" for="rating">Available Order Rating</label>
+              <input type="number" class="f-input" id="rating" value="4.0" min="1" max="5" step="0.1" placeholder="Unavailable" oninput="refreshStrip()"/>
+              <div class="field-hint">Only reviews answered before the forecast month. Leave blank if none.</div>
+            </div>
+            <div class="field" style="margin:0">
+              <label class="field-label" for="numProducts">Unique Products Ordered</label>
+              <input type="number" class="f-input" id="numProducts" value="50" min="0" step="1" required oninput="refreshStrip()"/>
+              <div class="field-hint">Actual unique products in last month's orders, not catalog size.</div>
+            </div>
+          </div>
+          <div class="field">
+            <label class="field-label" for="priceRange">Item Price Range (BRL)</label>
+            <input type="number" class="f-input" id="priceRange" value="150" min="0" step="0.01" placeholder="Unavailable"/>
+            <div class="field-hint">Last month's maximum item price minus minimum. Leave numeric conditions blank if unavailable; with zero orders, leave all four optional fields blank and use zero unique products.</div>
           </div>
 
           <div class="form-section">Model</div>
           <div class="field">
             <label class="field-label">Prediction Model</label>
             <div class="toggle-row">
-              <button class="toggle-btn active" id="btnRF" onclick="selModel('rf')">Random Forest</button>
-              <button class="toggle-btn" id="btnLR" onclick="selModel('lr')">Linear Regression</button>
+              <button type="button" class="toggle-btn active" id="btnRF" onclick="selModel('rf')">Random Forest</button>
+              <button type="button" class="toggle-btn" id="btnLR" onclick="selModel('lr')">Linear Regression</button>
             </div>
           </div>
-
-          <button class="predict-btn" id="predictBtn" onclick="predict()">
+          <p id="formError" class="form-error" role="alert" hidden></p>
+          <button type="submit" class="predict-btn" id="predictBtn" disabled>
             <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
               <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
             </svg>
-            Predict Sales Volume
+            Predict Order Quantity
           </button>
-        </div>
+        </form>
 
         <!-- Current conditions strip -->
         <div class="cond-strip">
@@ -684,7 +688,7 @@ input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; }
                 <line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
               </svg>
             </div>
-            <div><div class="cond-label">Price</div><div class="cond-val" id="cPrice">Rp 220.000</div></div>
+            <div><div class="cond-label">Price (BRL)</div><div class="cond-val" id="cPrice">R$100.00</div></div>
           </div>
           <div class="cond-item">
             <div class="cond-icon">
@@ -692,7 +696,7 @@ input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; }
                 <rect x="1" y="3" width="15" height="13" rx="2"/><path d="M16 8h4l3 3v5h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/>
               </svg>
             </div>
-            <div><div class="cond-label">Freight</div><div class="cond-val" id="cFreight">Rp 44.000</div></div>
+            <div><div class="cond-label">Freight (BRL)</div><div class="cond-val" id="cFreight">R$20.00</div></div>
           </div>
           <div class="cond-item">
             <div class="cond-icon">
@@ -708,7 +712,7 @@ input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; }
                 <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
               </svg>
             </div>
-            <div><div class="cond-label">Discount</div><div class="cond-val" id="cDiscount">0%</div></div>
+            <div><div class="cond-label">3-Month Avg</div><div class="cond-val" id="cAverage">90 units</div></div>
           </div>
         </div>
       </div>
@@ -726,7 +730,7 @@ input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; }
             </svg>
           </div>
           <div class="empty-title">Ready to Predict</div>
-          <div class="empty-sub">Adjust the product parameters and click <strong>Predict Sales Volume</strong> to get your ML-powered demand forecast.</div>
+          <div class="empty-sub">Enter the category history and previous-month conditions, then click <strong>Predict Order Quantity</strong>. No target-month transactions are used.</div>
           <div class="empty-grid">
             <div class="empty-grid-item"></div><div class="empty-grid-item"></div><div class="empty-grid-item"></div>
             <div class="empty-grid-item"></div><div class="empty-grid-item"></div><div class="empty-grid-item"></div>
@@ -742,7 +746,12 @@ input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; }
             <div class="param-item"><div class="param-key">RF MAE</div><div class="param-val" id="p-rfMAE">—</div></div>
             <div class="param-item"><div class="param-key">RF RMSE</div><div class="param-val" id="p-rfRMSE">—</div></div>
             <div class="param-item"><div class="param-key">LR Test R²</div><div class="param-val" id="p-lrR2">—</div></div>
+            <div class="param-item"><div class="param-key">LR MAE</div><div class="param-val" id="p-lrMAE">—</div></div>
+            <div class="param-item"><div class="param-key">LR RMSE</div><div class="param-val" id="p-lrRMSE">—</div></div>
+            <div class="param-item"><div class="param-key">Last-Month MAE</div><div class="param-val" id="p-lastMAE">—</div></div>
+            <div class="param-item"><div class="param-key">3-Month Avg MAE</div><div class="param-val" id="p-avgMAE">—</div></div>
           </div>
+          <p class="forecast-note" id="performanceNote">Historical test metrics, not prediction confidence.</p>
         </div>
       </div>
 
@@ -759,7 +768,7 @@ input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; }
                 </svg>
               </div>
               <div>
-                <div class="rc-eyebrow">Predicted Demand Level</div>
+                <div class="rc-eyebrow">Illustrative Volume Band</div>
                 <div class="rc-level" id="rcLevel">—</div>
               </div>
             </div>
@@ -769,19 +778,25 @@ input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; }
                   <path class="gauge-track" d="M 20 80 A 50 50 0 1 1 120 80"/>
                   <path class="gauge-fill" id="gaugeFill" d="M 20 80 A 50 50 0 1 1 120 80" stroke="#fff"/>
                   <text class="gauge-num" id="rcScore" x="70" y="65">—</text>
-                  <text class="gauge-label" x="70" y="96">/ 100</text>
+                  <text class="gauge-label" x="70" y="96">volume index</text>
                 </svg>
               </div>
             </div>
           </div>
           <div class="rc-bottom">
             <div>
-              <div class="rc-units-label">Estimated Units Sold</div>
+              <div class="rc-units-label">Estimated Units Ordered</div>
               <div class="rc-units-val" id="rcUnits">—</div>
               <div class="rc-units-sub" id="rcModelName">—</div>
             </div>
             <div class="rc-model-chip" id="rcChip">Random Forest</div>
           </div>
+        </div>
+
+        <p class="forecast-note">Volume index: 300+ units = 100; this is not confidence or accuracy. Bands: low &lt;70, moderate 70–119, high 120–179, very high 180+ units.</p>
+        <div class="params-card">
+          <div class="params-card-head">Simple Forecast Baselines</div>
+          <div class="params-grid" id="forecastBaselines"></div>
         </div>
 
         <!-- Distribution -->
@@ -794,8 +809,8 @@ input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; }
               </svg>
             </div>
             <div>
-              <div class="dist-card-title">Demand Probability Distribution</div>
-              <div class="dist-card-sub">Based on individual tree votes (RF) or heuristic estimate (LR)</div>
+              <div class="dist-card-title">Tree Forecast Spread</div>
+              <div class="dist-card-sub" id="distributionNote">RF tree forecasts by volume band; not calibrated probabilities.</div>
             </div>
           </div>
           <div id="distBars"></div>
@@ -815,251 +830,217 @@ input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; }
 <script>
 const MONTHS = ["January","February","March","April","May","June",
                 "July","August","September","October","November","December"];
-
 const RC_CLASS = { low:'rc-low', moderate:'rc-moderate', high:'rc-high', veryhigh:'rc-veryhigh' };
 const DIST_META = {
-  Low:        { pill:'dl-low',      fill:'df-low'      },
-  Moderate:   { pill:'dl-moderate', fill:'df-moderate' },
-  High:       { pill:'dl-high',     fill:'df-high'     },
-  "Very High":{ pill:'dl-veryhigh', fill:'df-veryhigh' },
+  Low: { pill:'dl-low', fill:'df-low' },
+  Moderate: { pill:'dl-moderate', fill:'df-moderate' },
+  High: { pill:'dl-high', fill:'df-high' },
+  "Very High": { pill:'dl-veryhigh', fill:'df-veryhigh' },
 };
-
+const GAUGE_STROKE = { low:'#0ea5e9', moderate:'#f59e0b', high:'#10b981', veryhigh:'#8b5cf6' };
+const currency = new Intl.NumberFormat("en-US", { style: "currency", currency: "BRL" });
 let selMdl = 'rf';
-let cfg    = null;
+let cfg = null;
 
-// Init
+function metric(value, digits = 2) {
+  return Number.isFinite(value) ? value.toFixed(digits) : '—';
+}
+function optionalNumber(id) {
+  const value = document.getElementById(id).value.trim();
+  return value === '' ? null : Number(value);
+}
+function showError(message = '') {
+  const element = document.getElementById('formError');
+  element.textContent = message;
+  element.hidden = !message;
+}
+function updateBanner() {
+  if (!cfg) return;
+  const metrics = cfg.model_metrics[selMdl === 'rf' ? 'random_forest' : 'linear_regression'];
+  document.getElementById('bannerTitle').textContent =
+    selMdl === 'rf' ? 'Random Forest Regressor' : 'Linear Regression';
+  document.getElementById('bannerSub').textContent =
+    'Test R² ' + metric(metrics.test_r2, 4) + ' · MAE ' + metric(metrics.test_mae) +
+    ' · RMSE ' + metric(metrics.test_rmse) + ' · Trained through ' + cfg.trained_through;
+}
 async function init() {
   try {
-    const r = await fetch('/api/config');
-    cfg = await r.json();
-
-    const sel = document.getElementById('category');
-    cfg.categories.forEach(c => {
-      const o = document.createElement('option');
-      o.value = o.textContent = c;
-      sel.appendChild(o);
+    const response = await fetch('/api/config');
+    if (!response.ok) throw new Error('Could not load the trained models.');
+    cfg = await response.json();
+    const select = document.getElementById('category');
+    cfg.categories.forEach(category => {
+      const option = document.createElement('option');
+      option.value = option.textContent = category;
+      select.appendChild(option);
     });
-
+    if (cfg.categories.includes('electronics')) select.value = 'electronics';
     const rf = cfg.model_metrics.random_forest;
     const lr = cfg.model_metrics.linear_regression;
-
-    document.getElementById('bannerSub').textContent =
-      `Test R² ${rf.test_r2} · MAE ${rf.test_mae} · RMSE ${rf.test_rmse} · Olist Dataset`;
-    document.getElementById('p-rfR2').textContent   = rf.test_r2;
-    document.getElementById('p-rfMAE').textContent  = rf.test_mae;
-    document.getElementById('p-rfRMSE').textContent = rf.test_rmse;
-    document.getElementById('p-lrR2').textContent   = lr.test_r2;
-  } catch(e) { console.error(e); }
-}
-
-// Sync helpers
-function sync(inputId, sliderId, badgeId, fmt, dec=0) {
-  const v = parseFloat(document.getElementById(inputId).value) || 0;
-  document.getElementById(badgeId).textContent = fmt(v.toFixed(dec));
-  if (sliderId) document.getElementById(sliderId).value = v;
-  refreshStrip();
-}
-function syncS(sliderId, inputId, badgeId, fmt, dec=0) {
-  const v = parseFloat(document.getElementById(sliderId).value) || 0;
-  document.getElementById(inputId).value = v.toFixed(dec);
-  document.getElementById(badgeId).textContent = fmt(v.toFixed(dec));
-  refreshStrip();
-}
-function refreshStrip() {
-  document.getElementById('cPrice').textContent    = 'Rp ' + parseInt(document.getElementById('price').value||0).toLocaleString('id-ID');
-  document.getElementById('cFreight').textContent  = 'Rp ' + parseInt(document.getElementById('freight').value||0).toLocaleString('id-ID');
-  document.getElementById('cRating').textContent   = (parseFloat(document.getElementById('rating').value)||0).toFixed(1) + ' / 5';
-  document.getElementById('cDiscount').textContent = (parseFloat(document.getElementById('discount').value)||0).toFixed(0) + '%';
-}
-
-function selModel(m) {
-  selMdl = m;
-  document.getElementById('btnRF').classList.toggle('active', m==='rf');
-  document.getElementById('btnLR').classList.toggle('active', m==='lr');
-}
-
-// Predict
-async function predict() {
-  const btn = document.getElementById('predictBtn');
-  btn.disabled = true;
-  btn.innerHTML = '<div class="spin"></div> Predicting…';
-
-  const discountPct = parseFloat(document.getElementById('discount').value) || 0;
-  // Convert IDR to BRL (1 BRL = Rp 2.200)
-  const IDR_TO_BRL = 2200;
-  const priceIDR   = parseFloat(document.getElementById('price').value)   || 0;
-  const freightIDR = parseFloat(document.getElementById('freight').value) || 0;
-
-  const payload = {
-    category        : document.getElementById('category').value,
-    avg_price       : priceIDR / IDR_TO_BRL,
-    avg_freight     : freightIDR / IDR_TO_BRL,
-    avg_rating      : parseFloat(document.getElementById('rating').value)    || 0,
-    discount        : discountPct,
-    num_products    : 50,
-    month           : parseInt(document.getElementById('month').value),
-    last_month_sales: parseFloat(document.getElementById('lastSales').value) || 0,
-    model           : selMdl,
-    // Keep IDR values for display purposes
-    priceIDR        : priceIDR,
-    freightIDR      : freightIDR,
-  };
-
-  try {
-    const res  = await fetch('/api/predict', {
-      method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify(payload),
+    const values = {
+      'p-rfR2': metric(rf.test_r2, 4),
+      'p-rfMAE': metric(rf.test_mae),
+      'p-rfRMSE': metric(rf.test_rmse),
+      'p-lrR2': metric(lr.test_r2, 4),
+      'p-lrMAE': metric(lr.test_mae),
+      'p-lrRMSE': metric(lr.test_rmse),
+      'p-lastMAE': metric(cfg.test_metrics['Last Month Baseline'].MAE),
+      'p-avgMAE': metric(cfg.test_metrics['3-Month Average Baseline'].MAE),
+    };
+    Object.entries(values).forEach(([id, value]) => {
+      document.getElementById(id).textContent = value;
     });
-    if (!res.ok) {
-      const err = await res.text();
-      console.error('Server error:', err);
-      alert('Prediction failed. Make sure the server is running on port 8000.');
-      return;
-    }
-    const data = await res.json();
-    renderResult(data, payload, discountPct);
-  } catch(e) {
-    console.error('Fetch error:', e);
-  } finally {
-    btn.disabled = false;
-    btn.innerHTML = `
-      <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
-        <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
-      </svg>
-      Predict Sales Volume`;
+    const testSplit = cfg.split_summary.find(split => split.Split === 'Test');
+    const bestMethod = Object.entries(cfg.test_metrics).sort((a, b) => a[1].MAE - b[1].MAE)[0][0];
+    document.getElementById('performanceNote').textContent =
+      'Historical test: ' + testSplit.Start + ' to ' + testSplit.End +
+      '. Lowest MAE: ' + bestMethod + '. These metrics are not prediction confidence.';
+    updateBanner();
+    document.getElementById('predictBtn').disabled = false;
+  } catch (error) {
+    showError(error.message || 'Unable to load models. Check that the API is running.');
   }
 }
-
-const RECS = {
-  low:      { text: "Demand is predicted to be low this month. Consider running targeted promotions, offering bundle deals, or reviewing the pricing strategy to stimulate buyer interest.", color: "#0284c7", icon: "ℹ" },
-  moderate: { text: "Moderate demand is expected. This is a stable period — maintain current stock levels and consider small discounts to convert undecided buyers.", color: "#d97706", icon: "~" },
-  high:     { text: "Strong demand predicted. Ensure sufficient inventory is available and consider optimizing product listings to capture maximum sales during this period.", color: "#059669", icon: "↑" },
-  veryhigh: { text: "Very high demand is forecasted. Prioritize stock replenishment immediately, review logistics capacity, and consider upselling complementary products.", color: "#7c3aed", icon: "↑↑" },
-};
-
-const GAUGE_STROKE = { low:'#0ea5e9', moderate:'#f59e0b', high:'#10b981', veryhigh:'#8b5cf6' };
-
-function animateCount(el, target, duration=900) {
-  const start = parseInt(el.textContent) || 0;
-  const startTime = performance.now();
+function refreshStrip() {
+  const month = Number(document.getElementById('month').value);
+  const history = [1, 2, 3].map(index => optionalNumber('sales' + index));
+  history.forEach((_, index) => {
+    document.getElementById('historyLabel' + (index + 1)).textContent =
+      MONTHS[(month - 4 + index + 12) % 12] + ' orders (t-' + (3 - index) + ')';
+  });
+  document.getElementById('previousMonthHint').textContent =
+    'Use ' + MONTHS[(month - 2 + 12) % 12] + ' conditions known before ' +
+    MONTHS[month - 1] + ' begins. Monetary values are in BRL.';
+  const validHistory = history.every(value => value !== null && Number.isFinite(value));
+  const average = validHistory ? history.reduce((sum, value) => sum + value, 0) / 3 : null;
+  document.getElementById('salesAverage').textContent = average === null ? '—' : average.toFixed(2);
+  document.getElementById('cAverage').textContent = average === null ? '—' : average.toFixed(2);
+  ['price', 'freight'].forEach(id => {
+    const value = optionalNumber(id);
+    document.getElementById(id === 'price' ? 'cPrice' : 'cFreight').textContent =
+      value === null ? 'Unavailable' : currency.format(value);
+  });
+  const rating = optionalNumber('rating');
+  document.getElementById('cRating').textContent = rating === null ? 'Unavailable' : rating.toFixed(1) + ' / 5';
+}
+function selModel(model) {
+  selMdl = model;
+  document.getElementById('btnRF').classList.toggle('active', model === 'rf');
+  document.getElementById('btnLR').classList.toggle('active', model === 'lr');
+  updateBanner();
+}
+async function predict() {
+  const form = document.getElementById('predictionForm');
+  if (!cfg || !form.reportValidity()) return;
+  showError();
+  const button = document.getElementById('predictBtn');
+  const initialButton = button.innerHTML;
+  button.disabled = true;
+  button.innerHTML = '<div class="spin"></div> Predicting…';
+  const payload = {
+    category: document.getElementById('category').value,
+    sales_history: [1, 2, 3].map(index => Number(document.getElementById('sales' + index).value)),
+    prev_avg_price: optionalNumber('price'),
+    prev_avg_freight: optionalNumber('freight'),
+    prev_avg_rating: optionalNumber('rating'),
+    prev_num_products: Number(document.getElementById('numProducts').value),
+    prev_price_range: optionalNumber('priceRange'),
+    month: Number(document.getElementById('month').value),
+    model: selMdl,
+  };
+  try {
+    const response = await fetch('/api/predict', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    const data = await response.json();
+    if (!response.ok) {
+      const detail = Array.isArray(data.detail)
+        ? data.detail.map(error => error.msg).join(' ')
+        : data.detail;
+      throw new Error(detail || 'Prediction failed.');
+    }
+    renderResult(data, payload);
+  } catch (error) {
+    showError(error.message || 'Could not reach the prediction server.');
+  } finally {
+    button.disabled = false;
+    button.innerHTML = initialButton;
+  }
+}
+function animateCount(element, target, duration = 900) {
+  const start = parseInt(element.textContent) || 0;
+  const started = performance.now();
   function step(now) {
-    const p = Math.min((now - startTime) / duration, 1);
-    const ease = 1 - Math.pow(1 - p, 3);
-    el.textContent = Math.round(start + (target - start) * ease);
-    if (p < 1) requestAnimationFrame(step);
-    else el.textContent = target;
+    const progress = Math.min((now - started) / duration, 1);
+    element.textContent = Math.round(start + (target - start) * (1 - Math.pow(1 - progress, 3)));
+    if (progress < 1) requestAnimationFrame(step);
   }
   requestAnimationFrame(step);
 }
-
-function renderResult(data, payload, discountPct) {
-  document.getElementById('emptyState').style.display = 'none';
-  document.getElementById('resultArea').style.display  = 'block';
-
-  // Card
-  const card = document.getElementById('resultCard');
-  card.className = `result-card ${RC_CLASS[data.level_key]}`;
-  card.style.animation = 'none';
-  void card.offsetWidth;
-  card.style.animation = '';
-
-  document.getElementById('rcLevel').textContent     = data.level;
-  document.getElementById('rcUnits').textContent     = data.units + ' units this month';
-  document.getElementById('rcModelName').textContent = data.model_name;
-  document.getElementById('rcChip').textContent      = data.model_name;
-
-  // Animated score counter (SVG text element)
-  const scoreEl = document.getElementById('rcScore');
-  if (scoreEl) {
-    scoreEl.style.fill = '#fff';
-    animateCount(scoreEl, data.score, 900);
-  }
-
-  // Arc gauge animation
-  const fill = document.getElementById('gaugeFill');
-  if (fill) {
-    const totalArc = 220;
-    const offset = totalArc - (data.score / 100) * totalArc;
-    fill.style.transition = 'none';
-    fill.style.stroke = GAUGE_STROKE[data.level_key] || '#fff';
-    fill.style.strokeDasharray = totalArc;
-    fill.style.strokeDashoffset = totalArc;
-    setTimeout(() => {
-      fill.style.transition = 'stroke-dashoffset 1.1s cubic-bezier(.34,1.56,.64,1)';
-      fill.style.strokeDashoffset = offset;
-    }, 80);
-  }
-
-  // Recommendation
-  const rec = RECS[data.level_key];
-  if (rec) {
-    const recCard = document.getElementById('recCard');
-    const recText = document.getElementById('recText');
-    const recIcon = recCard ? recCard.querySelector('.rec-icon') : null;
-    if (recCard) {
-      recCard.style.borderLeftColor = rec.color;
-      recCard.style.display = 'block';
-    }
-    if (recIcon) recIcon.style.background = `linear-gradient(135deg, ${rec.color}, ${rec.color}cc)`;
-    if (recText) recText.textContent = rec.text;
-  }
-
-  // Distribution
-  const distEl = document.getElementById('distBars');
-  distEl.innerHTML = '';
-  Object.entries(data.distribution).forEach(([name, pct]) => {
-    const m = DIST_META[name];
-    distEl.innerHTML += `
-      <div class="dist-row">
-        <div class="dist-row-top">
-          <span class="dist-label-pill ${m.pill}">${name}</span>
-          <span class="dist-pct">${pct}%</span>
-        </div>
-        <div class="dist-track">
-          <div class="dist-fill ${m.fill}" id="df-${name.replace(' ','')}"></div>
-        </div>
-      </div>`;
-  });
-  setTimeout(() => {
-    Object.entries(data.distribution).forEach(([name, pct]) => {
-      const el = document.getElementById('df-' + name.replace(' ',''));
-      if (el) el.style.width = pct + '%';
-    });
-  }, 50);
-
-  // Params
-  document.getElementById('paramsGrid').innerHTML = `
-    <div class="param-item"><div class="param-key">Category</div><div class="param-val" style="font-size:.72rem;font-family:var(--sans)">${payload.category.slice(0,18)}</div></div>
-    <div class="param-item"><div class="param-key">Month</div><div class="param-val">${MONTHS[payload.month-1]}</div></div>
-    <div class="param-item"><div class="param-key">Avg Price</div><div class="param-val">Rp ${payload.priceIDR.toLocaleString("id-ID")}</div></div>
-    <div class="param-item"><div class="param-key">Avg Freight</div><div class="param-val">Rp ${payload.freightIDR.toLocaleString("id-ID")}</div></div>
-    <div class="param-item"><div class="param-key">Avg Rating</div><div class="param-val">${payload.avg_rating.toFixed(1)} / 5</div></div>
-    <div class="param-item"><div class="param-key">Discount</div><div class="param-val">${discountPct}%</div></div>
-    <div class="param-item"><div class="param-key">Last Month</div><div class="param-val">${payload.last_month_sales} units</div></div>
-    <div class="param-item"><div class="param-key">Seasonality</div><div class="param-val">${data.seasonality_index}</div></div>
-  `;
+function param(label, value) {
+  const item = document.createElement('div');
+  item.className = 'param-item';
+  const key = document.createElement('div');
+  key.className = 'param-key';
+  key.textContent = label;
+  const content = document.createElement('div');
+  content.className = 'param-val';
+  content.textContent = value;
+  item.append(key, content);
+  return item;
 }
+function renderResult(data, payload) {
+  document.getElementById('emptyState').style.display = 'none';
+  document.getElementById('resultArea').style.display = 'block';
+  document.getElementById('resultCard').className = 'result-card ' + RC_CLASS[data.level_key];
+  document.getElementById('rcLevel').textContent = data.level;
+  document.getElementById('rcUnits').textContent = data.units + ' units in ' + MONTHS[payload.month - 1];
+  document.getElementById('rcModelName').textContent = data.model_name;
+  document.getElementById('rcChip').textContent = data.model_name;
+  animateCount(document.getElementById('rcScore'), data.score);
+  const fill = document.getElementById('gaugeFill');
+  fill.style.stroke = GAUGE_STROKE[data.level_key];
+  fill.style.strokeDasharray = 220;
+  fill.style.strokeDashoffset = 220 - data.score / 100 * 220;
 
-init();
-
-// Sync all sliders with their input defaults on page load
-(function syncDefaults() {
-  const pairs = [
-    ['price',    'priceS',    'priceBadge',    v => 'Rp ' + parseInt(v).toLocaleString('id-ID')],
-    ['freight',  'freightS',  'freightBadge',  v => 'Rp ' + parseInt(v).toLocaleString('id-ID')],
-    ['rating',   'ratingS',   'ratingBadge',   v => parseFloat(v).toFixed(1) + ' / 5'],
-    ['discount', 'discountS', 'discountBadge', v => v + '%'],
-  ];
-  pairs.forEach(([inputId, sliderId, badgeId, fmt]) => {
-    const input  = document.getElementById(inputId);
-    const slider = document.getElementById(sliderId);
-    const badge  = document.getElementById(badgeId);
-    if (!input || !slider || !badge) return;
-    slider.value = input.value;
-    badge.textContent = fmt(input.value);
+  document.getElementById('forecastBaselines').replaceChildren(
+    param('Last month', data.baselines.last_month + ' units'),
+    param('3-month average', data.baselines.average_3m.toFixed(2) + ' units'),
+    param('ML forecast, unrounded', data.raw_units.toFixed(2) + ' units')
+  );
+  const bars = document.getElementById('distBars');
+  bars.replaceChildren();
+  document.getElementById('distributionNote').textContent = data.distribution
+    ? 'Share of RF tree forecasts in each volume band; not calibrated probabilities.'
+    : 'Linear Regression returns one estimate. No tree distribution is available.';
+  Object.entries(data.distribution || {}).forEach(([name, percentage]) => {
+    const meta = DIST_META[name];
+    const row = document.createElement('div');
+    row.className = 'dist-row';
+    row.innerHTML =
+      '<div class="dist-row-top"><span class="dist-label-pill ' + meta.pill + '">' +
+      name + '</span><span class="dist-pct">' + percentage +
+      '%</span></div><div class="dist-track"><div class="dist-fill ' + meta.fill +
+      '" style="width:' + percentage + '%"></div></div>';
+    bars.appendChild(row);
   });
-  refreshStrip();
-})();
+  const moneyOrUnknown = value => value === null ? 'Unavailable' : currency.format(value);
+  document.getElementById('paramsGrid').replaceChildren(
+    param('Category', payload.category),
+    param('Target month', MONTHS[payload.month - 1]),
+    param('Orders t-3 / t-2 / t-1', payload.sales_history.join(' / ')),
+    param('3-month average', data.sales_avg_3m.toFixed(2)),
+    param('Previous avg price', moneyOrUnknown(payload.prev_avg_price)),
+    param('Previous avg freight', moneyOrUnknown(payload.prev_avg_freight)),
+    param('Available rating', payload.prev_avg_rating === null ? 'Unavailable' : payload.prev_avg_rating.toFixed(1)),
+    param('Unique products', payload.prev_num_products),
+    param('Previous price range', moneyOrUnknown(payload.prev_price_range)),
+    param('Training seasonality', data.seasonality_index.toFixed(4))
+  );
+}
+refreshStrip();
+init();
 </script>
 </body>
 </html>
